@@ -20,6 +20,7 @@
 #include "scheduler.h"
 
 #include "plugins/BreakoutPlugin.h"
+#include "plugins/SecondsClockPlugin.h"
 #include "plugins/CirclePlugin.h"
 #include "plugins/DDPPlugin.h"
 #include "plugins/DrawPlugin.h"
@@ -166,6 +167,7 @@ void baseSetup()
   pluginManager.addPlugin(new CirclePlugin());
   pluginManager.addPlugin(new RainPlugin());
   pluginManager.addPlugin(new FireworkPlugin());
+  pluginManager.addPlugin(new SecondsClockPlugin());
 
 #ifdef ENABLE_SERVER
   pluginManager.addPlugin(new BigClockPlugin());
@@ -193,7 +195,7 @@ void screenDrawingTask(void *parameter)
   for (;;)
   {
     pluginManager.runActivePlugin();
-    vTaskDelay(10);
+    vTaskDelay(1);
   }
 }
 

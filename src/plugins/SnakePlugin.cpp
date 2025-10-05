@@ -25,7 +25,7 @@ void SnakePlugin::newDot()
     }
   }
 
-  Screen.setPixelAtIndex(this->dot, SnakePlugin::LED_TYPE_ON, 40);
+  Screen.setPixelAtIndex(this->dot, SnakePlugin::LED_TYPE_ON);
 
   this->gameState = SnakePlugin::GAME_STATE_RUNNING;
 }

@@ -16,6 +16,7 @@ void BigClockPlugin::setup()
 
 void BigClockPlugin::loop()
 {
+  
   if (getLocalTime(&timeinfo))
   {
     if (previousHour != timeinfo.tm_hour || previousMinutes != timeinfo.tm_min)

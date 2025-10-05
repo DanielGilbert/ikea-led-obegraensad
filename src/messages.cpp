@@ -85,7 +85,7 @@ void Messages_::scroll()
 
 void Messages_::scrollMessageEveryMinute()
 {
-  struct tm timeinfo;
+  /*struct tm timeinfo;
 
   if (getLocalTime(&timeinfo))
   {
@@ -109,7 +109,8 @@ void Messages_::scrollMessageEveryMinute()
       }
       previousSecond = timeinfo.tm_sec;
     }
-  }
+  }*/
+ 
 }
 
 Messages_ &Messages = Messages.getInstance();

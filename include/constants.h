@@ -4,11 +4,11 @@
 #define ENABLE_SERVER
 
 #ifdef ESP32
-#define PIN_ENABLE 26
-#define PIN_DATA 27
-#define PIN_CLOCK 14
-#define PIN_LATCH 12
-#define PIN_BUTTON 16
+#define PIN_ENABLE 32
+#define PIN_DATA 33
+#define PIN_CLOCK 25
+#define PIN_LATCH 26
+#define PIN_BUTTON 27
 #endif
 
 #ifdef ESP8266
@@ -36,7 +36,7 @@
 #define ROWS 16
 
 // set your city or coords (https://github.com/chubin/wttr.in)
-#define WEATHER_LOCATION "Hamburg"
+#define WEATHER_LOCATION "Bremen,%20Germany"
 
 // name of WiFi created by the device if no known WiFi is available
 #define WIFI_MANAGER_SSID "IKEA"
