@@ -6,10 +6,16 @@
 #include "signs.h"
 #include "constants.h"
 #include "storage.h"
+#include "driver/spi_master.h"
+#include "driver/gpio.h"
+//#include <SPI.h>
 class Screen_
 {
 private:
   Screen_() = default;
+
+  //SPIClass *screenSPI;
+  spi_device_handle_t spi;
 
   uint8_t brightness_ = 255;
   uint8_t renderBuffer_[ROWS * COLS];
@@ -33,14 +39,17 @@ private:
       0xe7, 0xe6, 0xe5, 0xe4, 0xe3, 0xe2, 0xe1, 0xe0, 0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7,
       0xef, 0xee, 0xed, 0xec, 0xeb, 0xea, 0xe9, 0xe8, 0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd, 0xfe, 0xff};
 
+  void spi_send(const uint8_t *data, size_t length);
   static void onScreenTimer();
   ICACHE_RAM_ATTR void _render();
+
   void rotate();
   uint8_t *getRotatedRenderBuffer();
 
 public:
   static Screen_ &getInstance();
-
+  void _renderTask(); // SPI-Transfer im Task
+  static volatile bool renderReady; // Flag für Task
   Screen_(const Screen_ &) = delete;
   Screen_ &operator=(const Screen_ &) = delete;
 

@@ -1,5 +1,5 @@
 #include "messages.h"
-#include <SPI.h>
+//#include <SPI.h>
 
 Messages_ &Messages_::getInstance()
 {

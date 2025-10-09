@@ -1,11 +1,16 @@
 #include "screen.h"
-#include <SPI.h>
+//#include <SPI.h>
+#include "driver/spi_common.h"
+#include "driver/spi_master.h"
+#include "driver/gpio.h"
 #include <algorithm>
 
 #define TIMER_INTERVAL_US 200
 #define GRAY_LEVELS 64 // must be a power of two
 
 using namespace std;
+
+volatile bool Screen_::renderReady = false;
 
 uint8_t Screen_::getCurrentBrightness() const
 {
@@ -167,8 +172,51 @@ void Screen_::setup()
 #endif
 
 #ifdef ESP32
-  SPI.begin(PIN_CLOCK, 34, PIN_DATA, 25); // SCLK, MISO, MOSI, SS
-  SPI.beginTransaction(SPISettings(10000000, MSBFIRST, SPI_MODE0));
+  /*screenSPI = new SPIClass(VSPI);
+  
+  screenSPI->begin(PIN_CLOCK, 34, PIN_DATA, 25); // SCLK, MISO, MOSI, SS
+  screenSPI->beginTransaction(SPISettings(10000000, MSBFIRST, SPI_MODE0));*/
+
+  // SPI Bus konfigurieren
+  spi_bus_config_t buscfg = {
+    .mosi_io_num = PIN_DATA,
+    .miso_io_num = 34,
+    .sclk_io_num = PIN_CLOCK,
+    .quadwp_io_num = -1,
+    .quadhd_io_num = -1,
+    .max_transfer_sz = 4096,
+    .flags = 0,
+    .intr_flags = 0
+  };
+
+    spi_device_interface_config_t devcfg = {
+        .command_bits = 0,
+        .address_bits = 0,
+        .dummy_bits = 0,
+        .mode = 0,  // SPI mode 0
+        .duty_cycle_pos = 128,
+        .cs_ena_pretrans = 0,
+        .cs_ena_posttrans = 0,
+        .clock_speed_hz = 10 * 1000 * 1000,  // 10 MHz
+        .input_delay_ns = 0,
+        .spics_io_num = -1,                 // Kein automatischer CS
+        .flags = 0,
+        .queue_size = 1,
+        .pre_cb = nullptr,
+        .post_cb = nullptr
+    };
+
+    // SPI Bus initialisieren
+    esp_err_t ret = spi_bus_initialize(SPI2_HOST, &buscfg, SPI_DMA_CH_AUTO);
+    assert(ret == ESP_OK);
+
+    // SPI Gerät hinzufügen
+    ret = spi_bus_add_device(SPI2_HOST, &devcfg, &spi);
+    assert(ret == ESP_OK);
+
+    // LATCH-Pin als Output
+   // gpio_pad_select_gpio(PIN_LATCH);
+    gpio_set_direction((gpio_num_t)PIN_LATCH, GPIO_MODE_OUTPUT);
 
   hw_timer_t *Screen_timer = timerBegin(1000000);
   timerAttachInterrupt(Screen_timer, &onScreenTimer);
@@ -234,12 +282,13 @@ void Screen_::rotate()
 
 void Screen_::onScreenTimer()
 {
-  Screen._render();
+  //Screen._render();
+  renderReady = true;
 }
 
 ICACHE_RAM_ATTR void Screen_::_render()
 {
-  const auto buf = getRotatedRenderBuffer();
+  /*const auto buf = getRotatedRenderBuffer();
 
   // SPI data needs to be 32-bit aligned, round up before divide
   static unsigned long spi_bits[(ROWS * COLS + 8 * sizeof(unsigned long) - 1) / 8 / sizeof(unsigned long)] = {0};
@@ -256,11 +305,43 @@ ICACHE_RAM_ATTR void Screen_::_render()
   counter += (256 / GRAY_LEVELS);
 
   digitalWrite(PIN_LATCH, LOW);
-  SPI.writeBytes(bits, sizeof(spi_bits));
+  spi_send(bits, sizeof(spi_bits));
+ // screenSPI->writeBytes(bits, sizeof(spi_bits));
   digitalWrite(PIN_LATCH, HIGH);
 #ifdef ESP8266
   timer1_write(100);
-#endif
+#endif*/
+}
+
+void Screen_::_renderTask()
+{
+    const auto buf = getRotatedRenderBuffer();
+
+    // 32-bit aligned Buffer
+    static unsigned long spi_bits[(ROWS * COLS + 8 * sizeof(unsigned long) - 1) / 8 / sizeof(unsigned long)] = {0};
+    unsigned char *bits = (unsigned char *)spi_bits;
+    memset(bits, 0, sizeof(spi_bits));
+
+    static unsigned char counter = 0;
+
+    for (int idx = 0; idx < ROWS * COLS; idx++)
+    {
+        bits[idx >> 3] |= (buf[positions[idx]] > counter ? 0x80 : 0) >> (idx & 7);
+    }
+
+    counter += (256 / GRAY_LEVELS);
+
+    digitalWrite(PIN_LATCH, LOW);
+    spi_send(bits, sizeof(spi_bits)); // **sicher im Task**
+    digitalWrite(PIN_LATCH, HIGH);
+}
+
+void Screen_::spi_send(const uint8_t *data, size_t length) {
+    spi_transaction_t t = {
+        .length = length * 8,  // Länge in Bits
+        .tx_buffer = data,
+    };
+    ESP_ERROR_CHECK(spi_device_transmit(spi, &t)); // blockierend senden
 }
 
 void Screen_::drawLine(int x1, int y1, int x2, int y2, int ledStatus, uint8_t brightness)

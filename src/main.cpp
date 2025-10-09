@@ -1,9 +1,8 @@
 #include <Arduino.h>
 #include <BfButton.h>
-#include <SPI.h>
+//#include <SPI.h>
 
 #ifdef ESP8266
-/* Fix duplicate defs of HTTP_GET, HTTP_POST, ... in ESPAsyncWebServer.h */
 #define WEBSERVER_H
 #endif
 
@@ -20,7 +19,6 @@
 #include "scheduler.h"
 
 #include "plugins/BreakoutPlugin.h"
-#include "plugins/SecondsClockPlugin.h"
 #include "plugins/CirclePlugin.h"
 #include "plugins/DDPPlugin.h"
 #include "plugins/DrawPlugin.h"
@@ -31,6 +29,7 @@
 #include "plugins/RainPlugin.h"
 #include "plugins/SnakePlugin.h"
 #include "plugins/StarsPlugin.h"
+#include "plugins/SpectrumAnalyzerPlugin.h"
 #include "plugins/TickingClockPlugin.h"
 #include "plugins/ArtNet.h"
 
@@ -39,6 +38,7 @@
 #include "plugins/BigClockPlugin.h"
 #include "plugins/ClockPlugin.h"
 #include "plugins/WeatherPlugin.h"
+#include "plugins/SecondsClockPlugin.h"
 #endif
 
 #include "asyncwebserver.h"
@@ -167,13 +167,14 @@ void baseSetup()
   pluginManager.addPlugin(new CirclePlugin());
   pluginManager.addPlugin(new RainPlugin());
   pluginManager.addPlugin(new FireworkPlugin());
-  pluginManager.addPlugin(new SecondsClockPlugin());
+  pluginManager.addPlugin(new SpectrumAnalyzerPlugin());
 
 #ifdef ENABLE_SERVER
   pluginManager.addPlugin(new BigClockPlugin());
   pluginManager.addPlugin(new ClockPlugin());
   pluginManager.addPlugin(new PongClockPlugin());
   pluginManager.addPlugin(new TickingClockPlugin());
+  pluginManager.addPlugin(new SecondsClockPlugin());
   pluginManager.addPlugin(new WeatherPlugin());
   pluginManager.addPlugin(new AnimationPlugin());
   pluginManager.addPlugin(new DDPPlugin());
@@ -195,6 +196,14 @@ void screenDrawingTask(void *parameter)
   for (;;)
   {
     pluginManager.runActivePlugin();
+
+    // Prüfen, ob Timer-ISR ein Update angefordert hat
+        if (Screen.renderReady)
+        {
+            Screen.renderReady = false;
+            Screen._renderTask(); // SPI-Transfer sicher im Task
+        }
+
     vTaskDelay(1);
   }
 }
