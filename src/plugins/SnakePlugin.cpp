@@ -268,53 +268,13 @@ void SnakePlugin::moveSnake(uint newpos)
 
 void SnakePlugin::end()
 {
-  for (const int &n : this->position)
-  {
-    Screen.setPixelAtIndex(n, SnakePlugin::LED_TYPE_OFF);
-  }
-  delay(200);
+  this->curPos = this->position.size() - 1;
+  this->gameState = SnakePlugin::GAME_STATE_ENDING;
+}
 
-  for (const int &n : this->position)
-  {
-    Screen.setPixelAtIndex(n, SnakePlugin::LED_TYPE_ON);
-  }
-  delay(200);
-
-  for (const int &n : this->position)
-  {
-    Screen.setPixelAtIndex(n, SnakePlugin::LED_TYPE_OFF);
-  }
-  delay(200);
-
-  for (const int &n : this->position)
-  {
-    Screen.setPixelAtIndex(n, SnakePlugin::LED_TYPE_ON);
-  }
-  delay(200);
-
-  for (const int &n : this->position)
-  {
-    Screen.setPixelAtIndex(n, SnakePlugin::LED_TYPE_OFF);
-  }
-  delay(200);
-
-  for (const int &n : this->position)
-  {
-    Screen.setPixelAtIndex(n, SnakePlugin::LED_TYPE_ON);
-  }
-  delay(500);
-
-  for (const int &n : this->position)
-  {
-    Screen.setPixelAtIndex(n, SnakePlugin::LED_TYPE_OFF);
-    delay(200);
-  }
-
-  delay(200);
-  Screen.setPixelAtIndex(this->dot, SnakePlugin::LED_TYPE_OFF);
-  delay(500);
-
-  this->gameState = SnakePlugin::GAME_STATE_END;
+void SnakePlugin::ending(int n)
+{
+    Screen.setPixelAtIndex(this->position[n], SnakePlugin::LED_TYPE_OFF);
 }
 
 void SnakePlugin::setup()
@@ -329,6 +289,15 @@ void SnakePlugin::loop()
   case SnakePlugin::GAME_STATE_RUNNING:
     this->findDirection();
     delay(100);
+    break;
+  case SnakePlugin::GAME_STATE_ENDING:
+    this->ending(this->curPos);
+    this->curPos--;
+    if (this->curPos < 0)
+    {
+      this->gameState = SnakePlugin::GAME_STATE_END;
+    }
+    delay(150);
     break;
   case SnakePlugin::GAME_STATE_END:
     this->initGame();
